@@ -40,9 +40,9 @@ async function handleEvent(event) {
 
     try {
         const gptResponse = await openai.complete({
-            engine: 'text-davinci-003',
+            engine: 'gpt-4o',
             prompt: event.message.text,
-            maxTokens: 150,
+            maxTokens: 200,
         });
 
         // create an echoing text message
