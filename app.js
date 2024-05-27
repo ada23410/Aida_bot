@@ -2,10 +2,9 @@ require('dotenv').config();
 const { Configuration, OpenAIApi } = require("openai");
 
 const configuration = new Configuration({
-    apiKey: process.env.OPENAI_API_KEY,
-  });
-  const openai = new OpenAIApi(configuration);
-  
+  apiKey: process.env.OPENAI_API_KEY,
+});
+const openai = new OpenAIApi(configuration);
 
 const line = require('@line/bot-sdk');
 const express = require('express');
@@ -20,11 +19,9 @@ const config = {
 const client = new line.Client(config);
 
 // create Express app
-// about Express itself: https://expressjs.com/
 const app = express();
 
 // register a webhook handler with middleware
-// about the middleware, please refer to doc
 app.post('/callback', line.middleware(config), (req, res) => {
   Promise
     .all(req.body.events.map(handleEvent))
@@ -37,23 +34,31 @@ app.post('/callback', line.middleware(config), (req, res) => {
 
 // event handler
 async function handleEvent(event) {
-if (event.type !== 'message' || event.message.type !== 'text') {
+  if (event.type !== 'message' || event.message.type !== 'text') {
     // ignore non-text-message event
     return Promise.resolve(null);
+  }
+
+  try {
+    const completion = await openai.createCompletion({
+      model: "text-davinci-003",
+      prompt: event.message.text,
+      max_tokens: 150,
+    });
+
+    // create a echoing text message
+    const echo = { type: 'text', text: completion.data.choices[0].text.trim() };
+
+    // use reply API
+    return client.replyMessage(event.replyToken, echo);
+  } catch (error) {
+    console.error('Error with OpenAI API:', error);
+    return client.replyMessage(event.replyToken, {
+      type: 'text',
+      text: 'Sorry, there was an error processing your request.',
+    });
+  }
 }
-
-const completion = await openai.createCompletion({
-    model: "text-davinci-003",
-    prompt: event.message.text ,
-});
-
-// create a echoing text message
-const echo = { type: 'text', text: completion.data.choices[0].text };
-
-// use reply API
-return client.replyMessage(event.replyToken, echo);
-}
-  
 
 // listen on port
 const port = process.env.PORT || 3000;
