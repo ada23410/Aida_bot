@@ -1,10 +1,9 @@
 require('dotenv').config();
-const { Configuration, OpenAIApi } = require("openai");
+const OpenAI = require('openai-api');
 
-const configuration = new Configuration({
-    apiKey: process.env.OPENAI_API_KEY,
-});
-const openAi = new OpenAIApi(configuration);
+const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
+
+const openai = new OpenAI(OPENAI_API_KEY);
 
 const line = require('@line/bot-sdk');
 const express = require('express');
@@ -24,12 +23,12 @@ const app = express();
 // register a webhook handler with middleware
 app.post('/callback', line.middleware(config), (req, res) => {
     Promise
-        .all(req.body.events.map(handleEvent))
-        .then((result) => res.json(result))
-        .catch((err) => {
+    .all(req.body.events.map(handleEvent))
+    .then((result) => res.json(result))
+    .catch((err) => {
         console.error(err);
         res.status(500).end();
-        });
+    });
 });
 
 // event handler
@@ -40,23 +39,23 @@ async function handleEvent(event) {
     }
 
     try {
-    const completion = await openAi.createCompletion({
-        model: "text-davinci-003",
-        prompt: event.message.text,
-        max_tokens: 150,
-    });
-
-    // create a echoing text message
-    const echo = { type: 'text', text: completion.data.choices[0].text.trim() };
-
-    // use reply API
-    return client.replyMessage(event.replyToken, echo);
-    } catch (error) {
-        console.error('Error with OpenAI API:', error);
-        return client.replyMessage(event.replyToken, {
-        type: 'text',
-        text: 'Sorry, there was an error processing your request.',
+        const gptResponse = await openai.complete({
+            engine: 'text-davinci-003',
+            prompt: event.message.text,
+            maxTokens: 150,
         });
+
+        // create an echoing text message
+        const echo = { type: 'text', text: gptResponse.data.choices[0].text.trim() };
+
+        // use reply API
+        return client.replyMessage(event.replyToken, echo);
+    } catch (error) {
+            console.error('Error with OpenAI API:', error);
+            return client.replyMessage(event.replyToken, {
+            type: 'text',
+            text: 'Sorry, there was an error processing your request.',
+            });
     }
 }
 
