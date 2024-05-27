@@ -40,14 +40,17 @@ async function handleEvent(event) {
 
     try {
         const gptResponse = await openai.complete({
-            engine: 'gpt-4o',
-            prompt: event.message.text,
+            engine: 'gpt-3.5-turbo',
+            messages: [{
+                role: 'user',
+                content: event.message.text,
+            }],
             maxTokens: 200,
         });
 
         // create an echoing text message
-        const echo = { type: 'text', text: gptResponse.data.choices[0].text.trim() };
-
+        const echo = { type: 'text', text: choices.message.content.trim() || '抱歉，我沒有話可說了。' };
+        
         // use reply API
         return client.replyMessage(event.replyToken, echo);
     } catch (error) {
