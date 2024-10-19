@@ -38,16 +38,24 @@ async function handleEvent(event) {
         return Promise.resolve(null);
     }
     try {
-        // 檢查 OpenAI 回應是否為字串並且不為空
+        // 確保調用 OpenAI API 並正確分配 response 到 `completion`
+        const completion = await openai.chat.completions.create({
+            model: "gpt-4o-mini",
+            messages: [
+                { role: "system", content: "You are a helpful assistant." },
+                { role: "user", content: event.message.text }
+            ],
+            max_tokens: 200,
+        });
+    
+        // 檢查 OpenAI 的回應是否存在並且有內容
         const messageContent = completion.choices[0]?.message?.content?.trim() || 'Sorry, I have no response for that.';
-        
         console.log('Message to send to LINE:', messageContent);
     
-        // 檢查 event.replyToken 是否存在並有效
+        // 檢查 replyToken
         if (!event.replyToken) {
             throw new Error('Invalid or missing replyToken');
         }
-        console.log('ReplyToken:', event.replyToken);
     
         // 構建回應訊息
         const echo = { type: 'text', text: messageContent };
@@ -62,6 +70,7 @@ async function handleEvent(event) {
             text: 'Sorry, there was an error processing your request.',
         });
     }
+    
 }
 
 // listen on port
