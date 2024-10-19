@@ -47,11 +47,13 @@ async function handleEvent(event) {
             ],
             max_tokens: 200,
         });
-
-        const echo = { type: 'text', text: completion.choices[0].message.content.trim() || '抱歉，我沒有話可說了。' };
+    
+        // 檢查 OpenAI 的回應內容是否正確
+        const messageContent = completion.choices[0]?.message?.content?.trim();
+        const echo = { type: 'text', text: messageContent || '抱歉，我沒有話可說了。' };
         
-        // 使用 MessagingApiClient 回應
-        return client.replyMessage(event.replyToken, [echo]);
+        // 使用 reply API 回應
+        return client.replyMessage(event.replyToken, [echo]);  // 確保 echo 被包裝在數組中
     } catch (error) {
         console.error('Error with OpenAI API:', error.response ? error.response.data : error.message);
         return client.replyMessage(event.replyToken, {
