@@ -61,7 +61,10 @@ async function handleEvent(event) {
         const echo = { type: 'text', text: messageContent };
     
         // 使用數組格式傳遞訊息
-        return client.replyMessage(event.replyToken, [echo]);
+        return client.replyMessage({
+            replyToken: event.replyToken,
+            messages: [echo]
+        });
     } catch (error) {
         console.error('Error with OpenAI or LINE API:', error.response ? error.response.data : error.message);
         // 向使用者回傳錯誤訊息
