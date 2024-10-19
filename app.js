@@ -40,7 +40,7 @@ async function handleEvent(event) {
 
     try {
         const completion = await openai.chat.completions.create({
-            model: "gpt-4o-mini",
+            model: "gpt-3.5-turbo",
             messages: [
                 { role: "system", content: "You are a helpful assistant." },
                 { role: "user", content: event.message.text }
@@ -48,19 +48,25 @@ async function handleEvent(event) {
             max_tokens: 200,
         });
     
-        // 檢查 OpenAI 的回應內容是否正確
+        // 檢查 OpenAI 的回應是否存在，避免空值
         const messageContent = completion.choices[0]?.message?.content?.trim();
-        const echo = { type: 'text', text: messageContent || '抱歉，我沒有話可說了。' };
-        
-        // 使用 reply API 回應
-        return client.replyMessage(event.replyToken, [echo]);  // 確保 echo 被包裝在數組中
+        if (!messageContent) {
+            throw new Error('OpenAI API response is empty.');
+        }
+    
+        // 建立回應訊息，確保結構正確
+        const echo = { type: 'text', text: messageContent };
+    
+        // 使用 reply API 回應，確認傳入的是 array 格式
+        return client.replyMessage(event.replyToken, [echo]);
     } catch (error) {
-        console.error('Error with OpenAI API:', error.response ? error.response.data : error.message);
+        console.error('Error with OpenAI API or LINE API:', error.response ? error.response.data : error.message);
+        // 回傳錯誤訊息給使用者
         return client.replyMessage(event.replyToken, {
             type: 'text',
             text: 'Sorry, there was an error processing your request.',
         });
-    }
+    }    
 }
 
 // listen on port
