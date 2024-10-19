@@ -37,40 +37,31 @@ async function handleEvent(event) {
         // 忽略非文字訊息事件
         return Promise.resolve(null);
     }
-
     try {
-        const completion = await openai.chat.completions.create({
-            model: "gpt-4o-mini",
-            messages: [
-                { role: "system", content: "You are a helpful assistant." },
-                { role: "user", content: event.message.text }
-            ],
-            max_tokens: 200,
-        });
-    
-        // 檢查 OpenAI 的回應是否存在，避免空值
-        const messageContent = completion.choices[0]?.message?.content?.trim();
-    
-        if (typeof messageContent !== 'string') {
-            console.error('OpenAI response is not a string:', messageContent);
-            throw new Error('Invalid OpenAI response format.');
-        }
-
-        console.log('OpenAI response:', completion);
+        // 檢查 OpenAI 回應是否為字串並且不為空
+        const messageContent = completion.choices[0]?.message?.content?.trim() || 'Sorry, I have no response for that.';
+        
         console.log('Message to send to LINE:', messageContent);
-        // 建立回應訊息，確保結構正確
+    
+        // 檢查 event.replyToken 是否存在並有效
+        if (!event.replyToken) {
+            throw new Error('Invalid or missing replyToken');
+        }
+        console.log('ReplyToken:', event.replyToken);
+    
+        // 構建回應訊息
         const echo = { type: 'text', text: messageContent };
     
-        // 使用 reply API 回應，確認傳入的是 array 格式
+        // 使用數組格式傳遞訊息
         return client.replyMessage(event.replyToken, [echo]);
     } catch (error) {
-        console.error('Error with OpenAI API or LINE API:', error.response ? error.response.data : error.message);
-        // 回傳錯誤訊息給使用者
+        console.error('Error with OpenAI or LINE API:', error.response ? error.response.data : error.message);
+        // 向使用者回傳錯誤訊息
         return client.replyMessage(event.replyToken, {
             type: 'text',
             text: 'Sorry, there was an error processing your request.',
         });
-    }    
+    }
 }
 
 // listen on port
