@@ -50,10 +50,14 @@ async function handleEvent(event) {
     
         // 檢查 OpenAI 的回應是否存在，避免空值
         const messageContent = completion.choices[0]?.message?.content?.trim();
-        if (!messageContent) {
-            throw new Error('OpenAI API response is empty.');
-        }
     
+        if (typeof messageContent !== 'string') {
+            console.error('OpenAI response is not a string:', messageContent);
+            throw new Error('Invalid OpenAI response format.');
+        }
+
+        console.log('OpenAI response:', completion);
+        console.log('Message to send to LINE:', messageContent);
         // 建立回應訊息，確保結構正確
         const echo = { type: 'text', text: messageContent };
     
