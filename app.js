@@ -1,10 +1,5 @@
 require('dotenv').config();
-const OpenAI = require('openai-api');
-
-const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
-
-const openai = new OpenAI(OPENAI_API_KEY);
-
+const OpenAI = require('openai'); // 確保引用正確
 const line = require('@line/bot-sdk');
 const express = require('express');
 
@@ -17,8 +12,14 @@ const config = {
 // create LINE SDK client
 const client = new line.Client(config);
 
+// create OpenAI API client
+const openai = new OpenAI({
+    apiKey: process.env.OPENAI_API_KEY, // 讀取 API 金鑰
+});
+
 // create Express app
 const app = express();
+app.use(express.json()); // 解析 JSON 請求體
 
 // register a webhook handler with middleware
 app.post('/callback', line.middleware(config), (req, res) => {
@@ -34,31 +35,31 @@ app.post('/callback', line.middleware(config), (req, res) => {
 // event handler
 async function handleEvent(event) {
     if (event.type !== 'message' || event.message.type !== 'text') {
-        // ignore non-text-message event
+        // 忽略非文字訊息事件
         return Promise.resolve(null);
     }
 
     try {
-        const gptResponse = await openai.complete({
-            engine: 'gpt-3.5-turbo',
+        const gptResponse = await openai.chat.completions.create({
+            model: 'gpt-3.5-turbo',
             messages: [{
                 role: 'user',
                 content: event.message.text,
             }],
-            maxTokens: 200,
+            max_tokens: 200,
         });
 
-        // create an echoing text message
-        const echo = { type: 'text', text: choices.message.content.trim() || '抱歉，我沒有話可說了。' };
+        // 回傳訊息
+        const echo = { type: 'text', text: gptResponse.choices[0].message.content.trim() || '抱歉，我沒有話可說了。' };
         
-        // use reply API
-        return client.replyMessage(event.replyToken, echo);
+        // 使用 reply API 回應
+        return client.replyMessage(event.replyToken, [echo]);
     } catch (error) {
-            console.error('Error with OpenAI API:', error);
-            return client.replyMessage(event.replyToken, {
+        console.error('Error with OpenAI API:', error.response ? error.response.data : error.message);
+        return client.replyMessage(event.replyToken, {
             type: 'text',
             text: 'Sorry, there was an error processing your request.',
-            });
+        });
     }
 }
 
